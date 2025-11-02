@@ -400,3 +400,40 @@ def test_random_within_one_month_hour_day_month_averages():
     dm = r_month.json()
     assert dm["averages_per_bucket"]["word_count"] == total_wc
     assert dm["averages_per_bucket"]["study_minutes"] == total_min
+
+
+@pytest.mark.django_db
+def test_summary_user_not_found_returns_404():
+    c = APIClient()
+    qs = (
+        "/api/users/u-nope/summary?"
+        "from=2025-10-01T00:00:00Z&to=2025-10-02T00:00:00Z"
+        "&granularity=day&tz=UTC&include_empty=true"
+    )
+    r = c.get(qs)
+    assert r.status_code == 404
+    assert "not found" in r.json().get("detail", "").lower()
+
+@pytest.mark.django_db
+def test_summary_user_exists_but_no_data_in_window_returns_200_zeroes():
+    c = APIClient()
+    r = c.post("/api/records", {
+        "user_id": "u-sparse",
+        "idempotency_key": "k-1",
+        "word_count": 10,
+        "end_at": "2025-01-01T00:00:00Z",
+    }, format="json")
+    assert r.status_code in (200, 201)
+
+    qs = (
+        "/api/users/u-sparse/summary?"
+        "from=2025-02-01T00:00:00Z&to=2025-02-02T00:00:00Z"
+        "&granularity=day&tz=UTC&include_empty=true"
+    )
+    g = c.get(qs)
+    assert g.status_code == 200
+    data = g.json()
+    assert data["totals"]["word_count"] == "word count less than 1"
+    assert data["totals"]["study_minutes"] == "study minutes less than a minute"
+    assert data["averages_per_bucket"]["word_count"] == "word count less than 1"
+    assert data["averages_per_bucket"]["study_minutes"] == "study minutes less than a minute"

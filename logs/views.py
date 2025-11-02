@@ -172,6 +172,12 @@ class UserSummaryView(APIView):
             pytz.timezone(tzname)
         except Exception:
             return Response({'detail': 'invalid tz.'}, status=400)
+            
+        if not LearningRecord.objects.filter(user_id=user_id).exists():
+            return Response(
+                {"detail": f"user '{user_id}' not found"},
+                status=status.HTTP_404_NOT_FOUND,
+            )
 
         # Still compute per-bucket internally, but do not include buckets in the API response.
         buckets = summarize_with_sma(user_id, dt_from, dt_to, granularity=gran, tz=tzname)
