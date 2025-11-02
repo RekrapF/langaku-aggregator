@@ -1,0 +1,8 @@
+Django==4.2.*
+djangorestframework==3.*
+psycopg==3.*
+python-dotenv==1.*
+gunicorn==21.*
+pytz
+pytest
+pytest-django
