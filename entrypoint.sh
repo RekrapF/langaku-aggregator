@@ -1,28 +1,35 @@
-#!/usr/bin/env bash
-set -e
+#!/usr/bin/env sh
+set -eu
 
-# 等待 Postgres 可用
-echo "Waiting for Postgres at ${DB_HOST:-db}:${DB_PORT:-5432}..."
-until python - <<'PY'
-import os, psycopg
-host=os.getenv("DB_HOST","db")
-port=os.getenv("DB_PORT","5432")
-user=os.getenv("DB_USER","postgres")
-pwd=os.getenv("DB_PASSWORD","postgres")
-name=os.getenv("DB_NAME","appdb")
-psycopg.connect(host=host, port=port, user=user, password=pwd, dbname=name).close()
-print("ok")
+DB_HOST="${DB_HOST:-db}"
+DB_PORT="${DB_PORT:-5432}"
+
+echo "Waiting for Postgres at ${DB_HOST}:${DB_PORT}..."
+
+# Prefer pg_isready if available in the container
+if command -v pg_isready >/dev/null 2>&1; then
+  until pg_isready -h "$DB_HOST" -p "$DB_PORT" -q; do
+    sleep 1
+  done
+else
+  # Fallback: use Python to probe TCP readiness (no netcat dependency)
+  python - <<'PY'
+import os, socket, time
+h = os.environ.get("DB_HOST", "db")
+p = int(os.environ.get("DB_PORT", "5432"))
+while True:
+    try:
+        s = socket.create_connection((h, p), timeout=1)
+        s.close()
+        break
+    except Exception:
+        time.sleep(1)
+print("Postgres is ready")
 PY
-do
-  sleep 1
-done
+fi
 
-# migration
+# Run migrations
 python manage.py migrate --noinput
 
-# 可选：创建超级用户（仅在开发）
-# python manage.py createsuperuser --noinput || true
-
-# 启动
-# 开发用 runserver；生产建议换成 gunicorn
-python manage.py runserver 0.0.0.0:8000
+# Hand off to CMD/command
+exec "$@"
