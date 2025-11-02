@@ -1,17 +1,16 @@
 ## Quick Start
 
-```bash
-# 1) 克隆
-git clone https://github.com/<your-username>/<repo-name>.git
+# 1) Clone
+git clone https://github.com/RekrapF/langaku-aggregator.git
 cd <repo-name>
 
-# 2) 准备环境变量
+# 2) Prepare environment variables
 cp .env.sample .env
-# 如需修改密码/库名，请编辑 .env
+# Edit .env if you need to change the password or database name
 
-# 3) 一键启动
+# 3) Start with one command
 docker compose up -d --build
 
-# 4) 验证
+# 4) Verify
 curl http://localhost:8000/api/users/test/summary?from=2025-10-01T00:00:00Z&to=2025-10-02T00:00:00Z&granularity=day
-# 首次空数据会返回 totals/averages 近似 0（小值文案）
+# On the first run, since there’s no data yet, totals/averages will return values close to 0 (as placeholder text)
