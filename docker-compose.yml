@@ -1,45 +1,42 @@
 services:
   db:
     image: postgres:15
-    container_name: db-1
-    restart: unless-stopped
     environment:
-      POSTGRES_USER: ${POSTGRES_USER:-postgres}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
       POSTGRES_DB: ${POSTGRES_DB:-appdb}
+      POSTGRES_USER: ${POSTGRES_USER:-appuser}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-app_pass}
     ports:
       - "5432:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-appdb}"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-appuser} -d ${POSTGRES_DB:-appdb}"]
       interval: 5s
       timeout: 3s
-      retries: 10
+      retries: 20
 
   web:
     build:
       context: .
       dockerfile: docker/web/Dockerfile
-    container_name: web-1
-    restart: unless-stopped
-    depends_on:
-      db:
-        condition: service_healthy
     env_file:
       - .env
     environment:
-      DJANGO_SETTINGS_MODULE: assignment.settings
-      DB_NAME: ${DB_NAME:-appdb}
-      DB_USER: ${DB_USER:-appuser}
-      DB_PASSWORD: ${DB_PASSWORD:-app_pass}
+      DJANGO_SETTINGS_MODULE: ${DJANGO_SETTINGS_MODULE:-assignment.settings}
       DB_HOST: ${DB_HOST:-db}
       DB_PORT: ${DB_PORT:-5432}
-    ports:
-      - "8000:8000"
-    command: ["bash", "./entrypoint.sh"]
+      DB_NAME: ${POSTGRES_DB:-appdb}
+      DB_USER: ${POSTGRES_USER:-appuser}
+      DB_PASSWORD: ${POSTGRES_PASSWORD:-app_pass}
+    entrypoint: ["/app/entrypoint.sh"]
+    command: ["python", "manage.py", "runserver", "0.0.0.0:8000"]
+    depends_on:
+      db:
+        condition: service_healthy
     volumes:
       - .:/app
+    ports:
+      - "8000:8000"
 
 volumes:
   pgdata:
