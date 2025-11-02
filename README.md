@@ -8,6 +8,7 @@ cd langaku-aggregator
 # 2) Prepare environment variables
 cp .env.sample .env
 #Edit .env if you need to change the password or database name
+chmod +x entrypoint.sh
 
 # 3) Start with one command
 docker compose up -d --build
