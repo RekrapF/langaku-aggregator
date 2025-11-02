@@ -250,7 +250,7 @@ docker compose exec web pytest -q --reuse-db
 
 ---
 
-## Accuracy Improvements (3)
+## Accuracy Improvements
 
 1. **Optional Duration Splitting Across Day Boundaries**  
    When `start_at`/`end_at` cross local midnight, proportionally allocate minutes to each touched day/hour bucket instead of zeroing; keep `word_count` pinned to `end_at` to preserve current semantics.
