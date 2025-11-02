@@ -18,10 +18,11 @@ services:
       retries: 10
 
   web:
-    build: .
+    build:
+      context: .
+      dockerfile: docker/web/Dockerfile
     container_name: web-1
     restart: unless-stopped
-    dockerfile: docker/web/Dockerfile
     depends_on:
       db:
         condition: service_healthy
